@@ -14,6 +14,19 @@ function createNumberGrid() {
 
         grid.appendChild(button);
     }
+
+    // Add numbers 200, 300, 400, ..., 2000 (counting by 100s)
+    for (let i = 200; i <= 2000; i += 100) {
+        const button = document.createElement('button');
+        button.className = 'number-button';
+        button.textContent = i;
+        button.setAttribute('aria-label', `Number ${i}`);
+
+        // Add click event to speak the number
+        button.addEventListener('click', () => speakNumber(i));
+
+        grid.appendChild(button);
+    }
 }
 
 // Function to speak the number using Web Speech API
