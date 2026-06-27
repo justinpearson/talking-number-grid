@@ -132,6 +132,54 @@ footer a:hover {
     text-decoration: underline;
 }
 
+/* Sparkles that shoot out when a number is clicked */
+.sparkle {
+    position: fixed;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 1000;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 8px currentColor;
+    animation: sparkle-fly 0.8s ease-out forwards;
+}
+
+@keyframes sparkle-fly {
+    0% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(
+            calc(-50% + var(--dx)),
+            calc(-50% + var(--dy))
+        ) scale(0.2);
+    }
+}
+
+/* Confetti that rains down for the big celebration (number 100) */
+.confetti {
+    position: fixed;
+    top: -20px;
+    width: 10px;
+    height: 16px;
+    pointer-events: none;
+    z-index: 999;
+    border-radius: 2px;
+    animation: confetti-fall 3s linear forwards;
+}
+
+@keyframes confetti-fall {
+    0% {
+        opacity: 1;
+        transform: translateY(0) translateX(0) rotate(0deg);
+    }
+    100% {
+        opacity: 0.8;
+        transform: translateY(105vh) translateX(var(--drift)) rotate(var(--spin));
+    }
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
     h1 {
