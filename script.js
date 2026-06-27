@@ -48,8 +48,9 @@ function createNumberButton(n) {
     button.className = 'number-button color-' + (Math.abs(n) % 10);
     button.textContent = n;
     button.setAttribute('aria-label', 'Number ' + n);
-    button.addEventListener('click', function () {
+    button.addEventListener('click', function (event) {
         speakNumber(n);
+        celebrate(n, event.currentTarget);
     });
     return button;
 }
@@ -77,6 +78,132 @@ function speakNumber(number) {
     } else {
         alert('Number ' + number);
         console.warn('Speech synthesis not supported in this browser');
+    }
+}
+
+// ----- Sparkles, confetti & celebration -----------------------------------
+
+var SPARKLE_COLORS = [
+    '#ffd700', '#ff6b6b', '#4facfe', '#43e97b', '#f093fb',
+    '#fee140', '#00f2fe', '#aa00ff', '#ff9a56', '#2af598'
+];
+
+// Decide how big a celebration a number deserves, then fire it off from the
+// center of the clicked button.
+function celebrate(number, button) {
+    var rect = button.getBoundingClientRect();
+    var x = rect.left + rect.width / 2;
+    var y = rect.top + rect.height / 2;
+
+    if (Math.abs(number) === 100) {
+        // The big one: tons of sparkles, confetti and a little fanfare.
+        shootSparkles(x, y, 80);
+        shootConfetti(150);
+        playFanfare();
+    } else if (number !== 0 && number % 10 === 0) {
+        // Multiples of 10 get extra sparkles.
+        shootSparkles(x, y, 40);
+    } else {
+        // Every other number gets a modest burst.
+        shootSparkles(x, y, 14);
+    }
+}
+
+// Spawn `count` sparkle particles that fly outward from (x, y).
+function shootSparkles(x, y, count) {
+    for (var i = 0; i < count; i++) {
+        var sparkle = document.createElement('div');
+        sparkle.className = 'sparkle';
+        sparkle.style.left = x + 'px';
+        sparkle.style.top = y + 'px';
+        sparkle.style.background = SPARKLE_COLORS[i % SPARKLE_COLORS.length];
+
+        // Random direction and distance for the burst.
+        var angle = Math.random() * Math.PI * 2;
+        var distance = 40 + Math.random() * 80;
+        var dx = Math.cos(angle) * distance;
+        var dy = Math.sin(angle) * distance;
+        sparkle.style.setProperty('--dx', dx + 'px');
+        sparkle.style.setProperty('--dy', dy + 'px');
+
+        var size = 6 + Math.random() * 8;
+        sparkle.style.width = size + 'px';
+        sparkle.style.height = size + 'px';
+
+        document.body.appendChild(sparkle);
+        removeAfterAnimation(sparkle);
+    }
+}
+
+// Rain `count` confetti pieces down from the top of the screen.
+function shootConfetti(count) {
+    for (var i = 0; i < count; i++) {
+        var piece = document.createElement('div');
+        piece.className = 'confetti';
+        piece.style.left = Math.random() * 100 + 'vw';
+        piece.style.background = SPARKLE_COLORS[i % SPARKLE_COLORS.length];
+        piece.style.animationDelay = Math.random() * 0.5 + 's';
+        piece.style.animationDuration = 2 + Math.random() * 1.5 + 's';
+        piece.style.setProperty('--drift', (Math.random() * 200 - 100) + 'px');
+        piece.style.setProperty('--spin', (Math.random() * 720 - 360) + 'deg');
+
+        document.body.appendChild(piece);
+        removeAfterAnimation(piece);
+    }
+}
+
+// Remove an element once its CSS animation finishes (with a fallback timer).
+function removeAfterAnimation(el) {
+    var done = false;
+    function cleanup() {
+        if (done) return;
+        done = true;
+        if (el.parentNode) {
+            el.parentNode.removeChild(el);
+        }
+    }
+    el.addEventListener('animationend', cleanup);
+    setTimeout(cleanup, 4000);
+}
+
+// Play a short celebratory fanfare using the Web Audio API so we don't need
+// any audio files.
+function playFanfare() {
+    if (!('AudioContext' in window || 'webkitAudioContext' in window)) {
+        return;
+    }
+    try {
+        var AudioCtx = window.AudioContext || window.webkitAudioContext;
+        var ctx = new AudioCtx();
+
+        // A cheerful ascending arpeggio ending on a high note.
+        var notes = [523.25, 659.25, 783.99, 1046.5, 1318.5];
+        var noteLength = 0.16;
+
+        notes.forEach(function (freq, i) {
+            var osc = ctx.createOscillator();
+            var gain = ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.value = freq;
+
+            var start = ctx.currentTime + i * noteLength;
+            var end = start + noteLength + 0.1;
+            gain.gain.setValueAtTime(0.0001, start);
+            gain.gain.exponentialRampToValueAtTime(0.3, start + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.0001, end);
+
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(start);
+            osc.stop(end);
+        });
+
+        // Close the context after the fanfare finishes to free resources.
+        setTimeout(function () {
+            ctx.close();
+        }, (notes.length * noteLength + 0.5) * 1000);
+    } catch (e) {
+        console.warn('Could not play fanfare', e);
     }
 }
 
